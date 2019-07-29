@@ -1,20 +1,10 @@
 
 import os
 import secrets
-import hashlib
 from PIL import Image
 from flask import url_for, current_app
 from flask_mail import Message
 from flaskblog import mail
-
-
-def hash_pw(password, salt=None):
-	'''Hashes passwords. Output is of the form `salt, hash`'''
-	if not salt:
-		salt = secrets.token_hex(8)
-	pre_hash = (password + salt).encode()
-	hash = hashlib.sha256(pre_hash).hexdigest()
-	return salt, hash
 
 
 def save_picture(form_picture):
