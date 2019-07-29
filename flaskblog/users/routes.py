@@ -1,10 +1,10 @@
 
 from flask import Blueprint, render_template, url_for, flash, redirect, request
 from flask_login import login_user, current_user, logout_user, login_required
-from flaskblog import db
+from flaskblog import db, bcrypt
 from flaskblog.models import User, Post
 from flaskblog.users.forms import RegistrationForm, LoginForm, UpdateAccountForm, RequestResetForm, ResetPasswordForm
-from flaskblog.users.utils import hash_pw, save_picture, send_reset_email
+from flaskblog.users.utils import save_picture, send_reset_email
 
 
 users = Blueprint('users', __name__)
@@ -17,10 +17,8 @@ def register():
 	
 	form = RegistrationForm()	
 	if form.validate_on_submit():
-		# since no salt is passed, one is generated randomly
-		# `fullhash` is of the form `salt$hash`
-		full_hash = '$'.join(hash_pw(form.password.data))
-		user = User(username=form.username.data, email=form.email.data, password=full_hash)
+		hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+		user = User(username=form.username.data, email=form.email.data, password=hashed_password)
 		db.session.add(user)
 		db.session.commit()
 		flash('Your account has been created! You are now able to log in.', 'success')
@@ -37,12 +35,7 @@ def login():
 	form = LoginForm()
 	if form.validate_on_submit():
 		user = User.query.filter_by(email=form.email.data).first()
-		# separate the parts of the stored password
-		salt, hash = user.password.split('$')
-		# use stored salt to hash login password
-		_, login_hash = hash_pw(form.password.data, salt)
-		# test if the two hashes are equivalent (connecting the salts back is a waste of time)
-		if user and hash == login_hash:
+		if user and bcrypt.check_password_hash(user.password, form.password.data):
 			login_user(user, remember=form.remember.data)
 			next_page = request.args.get('next')
 			return redirect(next_page) if next_page else redirect(url_for('main.home'))
@@ -116,10 +109,8 @@ def reset_token(token):
 	# token was valid
 	form = ResetPasswordForm()
 	if form.validate_on_submit():
-		# since no salt is passed, one is generated randomly
-		# `fullhash` is of the form `salt$hash`
-		full_hash = '$'.join(hash_pw(form.password.data))
-		user.password = full_hash
+		hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+		user.password = hashed_password
 		db.session.commit()
 		flash('Your password has been updated! You are now able to log in.', 'success')
 		return redirect(url_for('users.login'))
