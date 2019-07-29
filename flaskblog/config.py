@@ -1,5 +1,8 @@
 
 try:
+	# custom imitation of os.environ, used for Pythonista
+	# TODO: remove when os.environ is well-configured, 
+	# and computer-centered version is more stable.
 	import environvars
 	target = environvars.environ
 except ModuleNotFoundError as e:
