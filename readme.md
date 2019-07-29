@@ -1,2 +1,2 @@
 
-Simple Flask-based blog web app.
+Simple Flask-based blog web app. Original.
